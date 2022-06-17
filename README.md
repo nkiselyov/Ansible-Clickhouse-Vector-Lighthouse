@@ -1,6 +1,6 @@
-# Домашнее задание к занятию "08.02 Работа с Playbook"
+# Домашнее задание к занятию "08.03 Использование Yandex Cloud"
 
-Данный плейбук предназначен для установки `Clickhouse` и `Vector` на хосты, указанные в `inventory` файле.
+Данный плейбук предназначен для установки `Clickhouse`, `Vector` и `Lighthouse` на хосты, указанные в `inventory` файле.
 
 ## group_vars
 
@@ -10,18 +10,22 @@
 | `clickhouse_packages` | `RPM` пакеты `Clickhouse`, которые необходимо скачать |
 | `vector_url` | URL адрес для скачивания `RPM` пакетов `Vector` |
 | `vector_version` | версия `Vector` |
-| `vector_config_dir` | каталог для конфига `vector` |
-| `vector_config` | конфиг файл `vector`. При использовании данного конфига `vector` генерирует демо-логи в формате `syslog` и отправляет их на хост `clickhouse` (БД `logs`, таблица `vector_table`) |
+| `vector_home` | каталог для скачивания `RPM` пакетов `Vector` |
+| `lighthouse_url` | ссылка на репозиторий `Lighthouse` |
+| `lighthouse_dir` | каталог для файлов `Lighthouse` |
+| `lighthouse_nginx_user` | пользователь, из-под которого будет работать `Nginx`. Для упрощения процесса на тестовом стенде используем root пользователя|
 
 ## Inventory файл
 
-Группа "Clickhouse" состоит из 1 хоста `clickhouse-01`
+Группа "clickhouse" состоит из 1 хоста `clickhouse-01`
 
 Группа "vector" состоит из 1 хоста `vector-01`
 
+Группа "vector" состоит из 1 хоста `lighthouse-01`
+
 ## Playbook
 
-Playbook состоит из 2 `play`.
+Playbook состоит из 3 `play`.
 
 Play "Install Clickhouse" применяется на группу хостов "Clickhouse" и предназначен для установки и запуска `Clickhouse`
 
@@ -63,8 +67,36 @@ Play "Install Vector" применяется на группу хостов "Vec
 | `Vector \| Apply template` | Применяем шаблон конфига `vector`. Здесь мы задаем путь конфига. Владельцем назначаем текущего пользователя `ansible`. После применения запускаем валидацию конфига |
 | `Vector \| change systemd unit` | Изменяем модуль службы `vector`. После этого указываем handler для старта службы `vector` |
 
+Play "Install lighthouse" применяется на группу хостов "lighthouse" и предназначен для установки и запуска `lighthouse`
+
+Объявляем `handler` для перезапуска `Nginx`.
+
+```yaml
+ handlers:
+    - name: Nginx reload
+      become: true
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+```
+| Имя pretask | Описание |
+|--------------|---------|
+| `Lighthouse \| Install git` | Устанавливаем `git` |
+| `Lighhouse \| Install nginx` | Устанавливаем `Nginx` |
+| `Lighthouse \| Apply nginx config` | Применяем конфиг `Nginx`. |
+
+| Имя таска | Описание |
+|--------------|---------|
+| `Lighthouse \| Clone repository` | Клонируем репозиторий `lighthouse` из ветки `master` |
+| `Lighthouse \| Apply config` | Применяем конфиг `Nginx` для `lighthouse`. После этого перезапускаем `nginx` для применения изменений |
+
+
 ## Template
 
 Шаблон "vector.service.j2" используется для изменения модуля службы `vector`. В нем мы определяем строку запуска `vector`. Также указываем, что unit должен быть запущен под текущим пользователем `ansible`
 
 Шаблон "vector.yml.j2" используется для настройки конфига `vector`. В нем мы указываем, что конфиг файл находится в переменной "vector_config" и его надо преобразовать в `YAML`.
+
+Шаблон "nginx.conf.j2" используется для первичной настройки `nginx`. Мы задаем пользователя для работы `nginx` и удаляем настройки root директории по умолчанию.
+
+Шаблон "lighthouse_nginx.conf.j2" настраивает `nginx` на работу с `lighthouse`. В нем прописываем порт 80, root директорию и index страницу.
