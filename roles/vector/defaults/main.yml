@@ -1,5 +1,9 @@
+---
+# defaults file for vector-role
 vector_version: 0.22.1
-vector_clickhouse_ip: 192.168.77.185
+vector_clickhouse_ip: localhost
+clickhouse_db_name: "logs"
+clickhouse_table_name: "data_logs"
 vector_config:
   sources:
     demo_logs:

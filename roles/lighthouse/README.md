@@ -1,12 +1,25 @@
----
-- name: Install Clickhouse
-  hosts: clickhouse
-  roles:
-    - clickhouse
-- name: Install Vector
-  hosts: vector
-  roles:
-    - vector
+Lighthouse
+=========
+
+This role can install and configure [Lighthouse](https://github.com/VKCOM/lighthouse.git) on Centos 8
+
+Requirements
+------------
+
+You neeed to install and configure `git` and `NGINX` (or another web server) before run this role.
+
+Role Variables
+--------------
+
+| vars | Description | Value | Location |
+|------|------------|---|---|
+| lighthouse_dir | Where to store Lighthouse files | "/home/{{ ansible_user_id }}/lighthouse" | defaults/main.yml |
+| lighthouse_url | URL of Clickhouse repo | "https://github.com/VKCOM/lighthouse.git" | vars/main.yml |
+
+Example Playbook
+----------------
+
+```yml
 - name: Install lighthouse
   hosts: lighthouse
   handlers:
@@ -41,4 +54,18 @@
         src: lighthouse_nginx.conf.j2
         dest: /etc/nginx/conf.d/lighthouse.conf
         mode: 0644
-      notify: Nginx reload
+        notify: Nginx reload 
+```
+
+License
+-------
+
+MIT
+
+Author Information
+------------------
+
+Nikita Kiselyov
+
+<nkiselyov94@gmail.com>
+
